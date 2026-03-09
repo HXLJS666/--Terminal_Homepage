@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Homepage</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background-color: #0c0c0c;
+            color: #00ff00;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .terminal-container {
+            width: 95%;
+            max-width: 1000px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background-color: #2d2d2d;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .btn-close { background-color: #ff5f56; }
+        .btn-minimize { background-color: #ffbd2e; }
+        .btn-maximize { background-color: #27c93f; }
+
+        .terminal-title {
+            margin-left: 10px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .terminal-body {
+            padding: 30px;
+            min-height: 300px;
+        }
+
+        .welcome-text {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .welcome-text .line {
+            margin-bottom: 5px;
+        }
+
+        .prompt-line {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .prompt {
+            color: #00ff00;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+
+        .prompt-user {
+            color: #00ff00;
+        }
+
+        .prompt-at {
+            color: #ffff00;
+        }
+
+        .prompt-host {
+            color: #00ffff;
+        }
+
+        .prompt-path {
+            color: #ff00ff;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+            min-width: 200px;
+        }
+
+        #command-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 16px;
+            caret-color: #00ff00;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background-color: #00ff00;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .search-engine-info {
+            margin-top: 15px;
+            color: #666;
+            font-size: 12px;
+        }
+
+        .search-engine-info span {
+            color: #00ff00;
+        }
+
+        .ascii-art {
+            color: #00ff00;
+            font-size: 11px;
+            line-height: 1.1;
+            margin-bottom: 20px;
+            opacity: 0.8;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .time-display {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="terminal-btn btn-close"></div>
+            <div class="terminal-btn btn-minimize"></div>
+            <div class="terminal-btn btn-maximize"></div>
+            <span class="terminal-title">terminal@homepage: ~</span>
+        </div>
+        <div class="terminal-body">
+            <div class="ascii-art">
+ _________      __ ______  __  __________  ___  _________ 
+/_  __/ _ \____/ // / __ \/  |/  / __/ _ \/ _ |/ ___/ __/ 
+ / / / , _/___/ _  / /_/ / /|_/ / _// ___/ __ / (_ / _/  
+/_/ /_/|_|   /_//_/\____/_/  /_/___/_/  /_/ |_\___/___/
+            </div>
+            <div class="time-display" id="time-display"></div>
+            <div class="welcome-text">
+                <div class="line">Last login: <span id="login-time"></span> from localhost</div>
+                <div class="line">Type a URL to visit directly, or enter keywords to search with Bing.</div>
+            </div>
+            <div class="prompt-line">
+                <span class="prompt">
+                    <span class="prompt-user">user</span>
+                    <span class="prompt-at">@</span>
+                    <span class="prompt-host">homepage</span>
+                    <span class="prompt-path">:~$</span>
+                </span>
+                <div class="input-wrapper">
+                    <input type="text" id="command-input" placeholder="Enter URL or search keywords..." autocomplete="off">
+                </div>
+            </div>
+            <div class="search-engine-info">
+                Search Engine: <span>Bing (cn.bing.com)</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 更新时间显示
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('time-display').textContent = timeString;
+            document.getElementById('login-time').textContent = timeString;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // 获取输入框
+        const input = document.getElementById('command-input');
+        
+        // 自动聚焦
+        input.focus();
+        document.addEventListener('click', () => input.focus());
+
+        // 检测是否为URL
+        function isURL(str) {
+            // 检测是否以 http://, https://, ftp:// 等开头
+            const protocolPattern = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+            
+            // 检测是否为域名格式 (如 example.com, www.example.com)
+            const domainPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+            
+            // 检测是否为IP地址
+            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+            
+            // 检测是否包含路径 (如 example.com/path)
+            const urlWithPathPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(\/.*)?$/;
+            
+            const trimmed = str.trim();
+            
+            // 如果以协议开头，肯定是URL
+            if (protocolPattern.test(trimmed)) {
+                return true;
+            }
+            
+            // 如果是纯域名或IP
+            if (domainPattern.test(trimmed) || ipPattern.test(trimmed)) {
+                return true;
+            }
+            
+            // 如果包含路径
+            if (urlWithPathPattern.test(trimmed)) {
+                return true;
+            }
+            
+            // 检测是否包含空格，包含空格的一般是搜索词
+            if (trimmed.includes(' ')) {
+                return false;
+            }
+            
+            // 如果包含常见TLD，可能是URL
+            const commonTLDs = ['.com', '.cn', '.net', '.org', '.io', '.edu', '.gov', '.co', '.me', '.info', '.biz'];
+            const hasTLD = commonTLDs.some(tld => trimmed.toLowerCase().includes(tld));
+            
+            // 如果看起来像URL但没有协议，添加 http:// 后验证
+            if (hasTLD && !trimmed.includes(' ')) {
+                // 进一步检查，确保不是搜索词中包含TLD的情况
+                const parts = trimmed.split('.');
+                if (parts.length >= 2 && parts[parts.length - 1].length >= 2) {
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
+        // 处理输入
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const value = this.value.trim();
+                
+                if (!value) return;
+                
+                if (isURL(value)) {
+                    // 是URL，直接打开
+                    let url = value;
+                    
+                    // 如果没有协议，添加 https://
+                    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url)) {
+                        url = 'https://' + url;
+                    }
+                    
+                    window.location.href = url;
+                } else {
+                    // 是搜索词，使用Bing搜索
+                    const searchUrl = 'https://cn.bing.com/search?q=' + encodeURIComponent(value);
+                    window.location.href = searchUrl;
+                }
+            }
+        });
+
+        // 添加一些键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+L 清屏（聚焦到输入框）
+            if (e.ctrlKey && e.key === 'l') {
+                e.preventDefault();
+                input.value = '';
+                input.focus();
+            }
+        });
+    </script>
+</body>
+</html>
