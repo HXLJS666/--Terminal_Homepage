@@ -434,32 +434,107 @@
         input.focus();
         document.addEventListener('click', () => input.focus());
 
-        // 检测是否为URL
-        function isURL(str) {
-            const protocolPattern = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
-            const domainPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
-            const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
-            const urlWithPathPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(\/.*)?$/;
+        // 指令系统
+        const CommandSystem = {
+            // 注册的所有指令
+            commands: new Map(),
             
-            const trimmed = str.trim();
+            // 注册指令
+            register(name, handler, description = '') {
+                this.commands.set(name, { handler, description });
+            },
             
-            if (protocolPattern.test(trimmed)) return true;
-            if (domainPattern.test(trimmed) || ipPattern.test(trimmed)) return true;
-            if (urlWithPathPattern.test(trimmed)) return true;
-            if (trimmed.includes(' ')) return false;
-            
-            const commonTLDs = ['.com', '.cn', '.net', '.org', '.io', '.edu', '.gov', '.co', '.me', '.info', '.biz'];
-            const hasTLD = commonTLDs.some(tld => trimmed.toLowerCase().includes(tld));
-            
-            if (hasTLD && !trimmed.includes(' ')) {
-                const parts = trimmed.split('.');
-                if (parts.length >= 2 && parts[parts.length - 1].length >= 2) {
-                    return true;
+            // 解析输入
+            parse(input) {
+                const trimmed = input.trim();
+                
+                // 检查是否以 - 开头（指令模式）
+                if (trimmed.startsWith('-')) {
+                    const spaceIndex = trimmed.indexOf(' ');
+                    let cmd, args;
+                    
+                    if (spaceIndex === -1) {
+                        cmd = trimmed;
+                        args = '';
+                    } else {
+                        cmd = trimmed.substring(0, spaceIndex);
+                        args = trimmed.substring(spaceIndex + 1).trim();
+                    }
+                    
+                    return { type: 'command', cmd, args, original: trimmed };
                 }
-            }
+                
+                // 普通输入
+                return { type: 'normal', content: trimmed, original: trimmed };
+            },
             
-            return false;
-        }
+            // 执行指令
+            execute(parsed) {
+                if (parsed.type === 'command') {
+                    const command = this.commands.get(parsed.cmd);
+                    if (command) {
+                        return command.handler(parsed.args, parsed);
+                    }
+                    // 未知指令，作为搜索处理
+                    return this.fallbackSearch(parsed.original);
+                }
+                
+                // 普通输入，自动判断
+                return this.handleNormalInput(parsed.content);
+            },
+            
+            // 处理普通输入（URL检测）
+            handleNormalInput(content) {
+                if (this.isURL(content)) {
+                    let url = content;
+                    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url)) {
+                        url = 'https://' + url;
+                    }
+                    return { action: 'navigate', url };
+                }
+                return { action: 'search', query: content };
+            },
+            
+            // 强制搜索（fallback）
+            fallbackSearch(query) {
+                return { action: 'search', query };
+            },
+            
+            // URL检测
+            isURL(str) {
+                const protocolPattern = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+                const domainPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+                const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+                const urlWithPathPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(\/.*)?$/;
+                
+                const trimmed = str.trim();
+                
+                if (protocolPattern.test(trimmed)) return true;
+                if (domainPattern.test(trimmed) || ipPattern.test(trimmed)) return true;
+                if (urlWithPathPattern.test(trimmed)) return true;
+                if (trimmed.includes(' ')) return false;
+                
+                const commonTLDs = ['.com', '.cn', '.net', '.org', '.io', '.edu', '.gov', '.co', '.me', '.info', '.biz'];
+                const hasTLD = commonTLDs.some(tld => trimmed.toLowerCase().includes(tld));
+                
+                if (hasTLD && !trimmed.includes(' ')) {
+                    const parts = trimmed.split('.');
+                    if (parts.length >= 2 && parts[parts.length - 1].length >= 2) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+        };
+
+        // 注册 -f 指令：强制搜索
+        CommandSystem.register('-f', (args, parsed) => {
+            if (!args) {
+                return { action: 'error', message: 'Usage: -f <search query>' };
+            }
+            return { action: 'search', query: args };
+        }, 'Force search mode');
 
         // 处理输入
         input.addEventListener('keydown', function(e) {
@@ -467,14 +542,21 @@
                 const value = this.value.trim();
                 if (!value) return;
                 
+                const result = CommandSystem.execute(CommandSystem.parse(value));
+                
                 let url;
-                if (isURL(value)) {
-                    url = value;
-                    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url)) {
-                        url = 'https://' + url;
-                    }
-                } else {
-                    url = config.searchEngine + encodeURIComponent(value);
+                switch (result.action) {
+                    case 'navigate':
+                        url = result.url;
+                        break;
+                    case 'search':
+                        url = config.searchEngine + encodeURIComponent(result.query);
+                        break;
+                    case 'error':
+                        alert(result.message);
+                        return;
+                    default:
+                        return;
                 }
                 
                 if (config.openInNewTab) {
