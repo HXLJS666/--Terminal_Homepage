@@ -150,6 +150,9 @@
             border-radius: 8px;
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
         }
 
         .terminal-header {
@@ -158,6 +161,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-shrink: 0;
         }
 
         .terminal-btn {
@@ -177,23 +181,76 @@
         }
 
         .terminal-body {
-            padding: 30px;
-            min-height: 300px;
+            padding: 20px 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .terminal-content {
+            min-height: 100%;
+        }
+
+        .welcome-section {
+            margin-bottom: 20px;
+        }
+
+        .ascii-art {
+            color: #00ff00;
+            font-size: 11px;
+            line-height: 1.1;
+            margin-bottom: 15px;
+            opacity: 0.8;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .time-display {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 10px;
         }
 
         .welcome-text {
-            margin-bottom: 20px;
             line-height: 1.6;
+            margin-bottom: 10px;
         }
 
         .welcome-text .line {
             margin-bottom: 5px;
         }
 
+        .terminal-history {
+            margin-bottom: 10px;
+        }
+
+        .history-line {
+            margin-bottom: 8px;
+        }
+
+        .history-input {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .history-output {
+            color: #888;
+            margin-top: 4px;
+            padding-left: 20px;
+            white-space: pre-wrap;
+        }
+
+        .history-output.error {
+            color: #ff5f56;
+        }
+
+        .history-output.success {
+            color: #27c93f;
+        }
+
         .prompt-line {
             display: flex;
             align-items: center;
-            margin-top: 20px;
             flex-wrap: wrap;
         }
 
@@ -236,20 +293,6 @@
             caret-color: #00ff00;
         }
 
-        .cursor {
-            display: inline-block;
-            width: 10px;
-            height: 18px;
-            background-color: #00ff00;
-            animation: blink 1s infinite;
-            margin-left: 2px;
-        }
-
-        @keyframes blink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0; }
-        }
-
         .search-engine-info {
             margin-top: 15px;
             color: #666;
@@ -258,22 +301,6 @@
 
         .search-engine-info span {
             color: #00ff00;
-        }
-
-        .ascii-art {
-            color: #00ff00;
-            font-size: 11px;
-            line-height: 1.1;
-            margin-bottom: 20px;
-            opacity: 0.8;
-            white-space: pre;
-            overflow-x: auto;
-        }
-
-        .time-display {
-            color: #888;
-            font-size: 12px;
-            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -305,31 +332,40 @@
             <div class="terminal-btn btn-maximize"></div>
             <span class="terminal-title">terminal@homepage: ~</span>
         </div>
-        <div class="terminal-body">
-            <div class="ascii-art">
+        <div class="terminal-body" id="terminal-body">
+            <div class="terminal-content" id="terminal-content">
+                <div class="welcome-section">
+                    <div class="ascii-art">
  _________      __ ______  __  __________  ___  _________ 
 /_  __/ _ \____/ // / __ \/  |/  / __/ _ \/ _ |/ ___/ __/ 
  / / / , _/___/ _  / /_/ / /|_/ / _// ___/ __ / (_ / _/  
 /_/ /_/|_|   /_//_/\____/_/  /_/___/_/  /_/ |_\___/___/
-            </div>
-            <div class="time-display" id="time-display"></div>
-            <div class="welcome-text">
-                <div class="line">Last login: <span id="login-time"></span> from localhost</div>
-                <div class="line">Type a URL to visit directly, or enter keywords to search with Bing.</div>
-            </div>
-            <div class="prompt-line">
-                <span class="prompt">
-                    <span class="prompt-user" id="prompt-username">user</span>
-                    <span class="prompt-at">@</span>
-                    <span class="prompt-host">homepage</span>
-                    <span class="prompt-path">:~$</span>
-                </span>
-                <div class="input-wrapper">
-                    <input type="text" id="command-input" placeholder="Enter URL or search keywords..." autocomplete="off">
+                    </div>
+                    <div class="time-display" id="time-display"></div>
+                    <div class="welcome-text">
+                        <div class="line">Last login: <span id="login-time"></span> from localhost</div>
+                        <div class="line">Type a URL to visit directly, or enter keywords to search with Bing.</div>
+                        <div class="line">Use -f <query> to force search.</div>
+                    </div>
                 </div>
-            </div>
-            <div class="search-engine-info">
-                Search Engine: <span>Bing (cn.bing.com)</span>
+                
+                <div class="terminal-history" id="terminal-history"></div>
+                
+                <div class="prompt-line" id="current-prompt">
+                    <span class="prompt">
+                        <span class="prompt-user" id="prompt-username">user</span>
+                        <span class="prompt-at">@</span>
+                        <span class="prompt-host">homepage</span>
+                        <span class="prompt-path">:~$</span>
+                    </span>
+                    <div class="input-wrapper">
+                        <input type="text" id="command-input" placeholder="" autocomplete="off" autofocus>
+                    </div>
+                </div>
+                
+                <div class="search-engine-info">
+                    Search Engine: <span>Bing (cn.bing.com)</span>
+                </div>
             </div>
         </div>
     </div>
@@ -362,10 +398,8 @@
 
         // 应用配置
         function applyConfig() {
-            // 更新用户名显示
             document.getElementById('prompt-username').textContent = config.username;
             
-            // 更新背景图
             if (config.backgroundImage) {
                 document.body.style.backgroundImage = `url(${config.backgroundImage})`;
                 document.body.classList.add('has-bg-image');
@@ -374,7 +408,6 @@
                 document.body.classList.remove('has-bg-image');
             }
             
-            // 更新设置面板
             document.getElementById('setting-username').value = config.username;
             document.getElementById('setting-newtab').checked = config.openInNewTab;
             document.getElementById('setting-bgimage').value = config.backgroundImage;
@@ -427,82 +460,141 @@
         updateTime();
         setInterval(updateTime, 1000);
 
-        // 获取输入框
-        const input = document.getElementById('command-input');
-        
-        // 自动聚焦
-        input.focus();
-        document.addEventListener('click', () => input.focus());
+        // 终端历史记录管理
+        const Terminal = {
+            history: document.getElementById('terminal-history'),
+            input: document.getElementById('command-input'),
+            body: document.getElementById('terminal-body'),
+            
+            // 获取提示符HTML
+            getPromptHTML() {
+                return `<span class="prompt-user">${config.username}</span><span class="prompt-at">@</span><span class="prompt-host">homepage</span><span class="prompt-path">:~$</span>`;
+            },
+            
+            // 添加历史记录
+            addHistory(input, output, type = 'normal') {
+                const line = document.createElement('div');
+                line.className = 'history-line';
+                
+                const inputLine = document.createElement('div');
+                inputLine.className = 'history-input';
+                inputLine.innerHTML = `
+                    <span class="prompt">${this.getPromptHTML()}</span>
+                    <span>${this.escapeHtml(input)}</span>
+                `;
+                
+                line.appendChild(inputLine);
+                
+                if (output) {
+                    const outputLine = document.createElement('div');
+                    outputLine.className = `history-output ${type}`;
+                    outputLine.textContent = output;
+                    line.appendChild(outputLine);
+                }
+                
+                this.history.appendChild(line);
+                this.scrollToBottom();
+            },
+            
+            // 转义HTML
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            },
+            
+            // 清空输入
+            clearInput() {
+                this.input.value = '';
+            },
+            
+            // 滚动到底部
+            scrollToBottom() {
+                this.body.scrollTop = this.body.scrollHeight;
+            },
+            
+            // 聚焦输入
+            focus() {
+                this.input.focus();
+            }
+        };
 
         // 指令系统
         const CommandSystem = {
-            // 注册的所有指令
             commands: new Map(),
             
-            // 注册指令
             register(name, handler, description = '') {
                 this.commands.set(name, { handler, description });
             },
             
-            // 解析输入
             parse(input) {
                 const trimmed = input.trim();
                 
-                // 检查是否以 - 开头（指令模式）
                 if (trimmed.startsWith('-')) {
                     const spaceIndex = trimmed.indexOf(' ');
-                    let cmd, args;
                     
                     if (spaceIndex === -1) {
-                        cmd = trimmed;
-                        args = '';
-                    } else {
-                        cmd = trimmed.substring(0, spaceIndex);
-                        args = trimmed.substring(spaceIndex + 1).trim();
+                        return { type: 'command', cmd: trimmed.toLowerCase(), args: '', original: trimmed };
                     }
+                    
+                    const cmd = trimmed.substring(0, spaceIndex).toLowerCase();
+                    const args = trimmed.substring(spaceIndex + 1).trim();
                     
                     return { type: 'command', cmd, args, original: trimmed };
                 }
                 
-                // 普通输入
                 return { type: 'normal', content: trimmed, original: trimmed };
             },
             
-            // 执行指令
             execute(parsed) {
                 if (parsed.type === 'command') {
                     const command = this.commands.get(parsed.cmd);
                     if (command) {
                         return command.handler(parsed.args, parsed);
                     }
-                    // 未知指令，作为搜索处理
                     return this.fallbackSearch(parsed.original);
                 }
                 
-                // 普通输入，自动判断
                 return this.handleNormalInput(parsed.content);
             },
             
-            // 处理普通输入（URL检测）
             handleNormalInput(content) {
-                if (this.isURL(content)) {
-                    let url = content;
-                    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url)) {
-                        url = 'https://' + url;
-                    }
-                    return { action: 'navigate', url };
+                const url = this.extractURL(content);
+                if (url) {
+                    const target = this.normalizeUrl(url);
+                    return { action: 'navigate', url: target, display: `Opening: ${target}` };
                 }
-                return { action: 'search', query: content };
+                return { 
+                    action: 'search', 
+                    query: content,
+                    display: `Searching: "${content}"`
+                };
             },
             
-            // 强制搜索（fallback）
+            // 从输入中提取第一个有效 URL（兼容 "f https://... " 这类误输入）
+            extractURL(content) {
+                if (this.isURL(content)) return content;
+                for (const part of content.split(/\s+/)) {
+                    if (part && this.isURL(part)) return part;
+                }
+                return null;
+            },
+            
+            // 统一 URL 规整：已有已知协议则原样返回，否则补 https://
+            normalizeUrl(url) {
+                return /^(https?|ftp|file):\/\//i.test(url) ? url : 'https://' + url;
+            },
+            
             fallbackSearch(query) {
-                return { action: 'search', query };
+                return { 
+                    action: 'search', 
+                    query,
+                    display: `Searching: "${query}"`
+                };
             },
             
-            // URL检测
             isURL(str) {
-                const protocolPattern = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//;
+                const protocolPattern = /^(https?|ftp|file):\/\//i;
                 const domainPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
                 const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
                 const urlWithPathPattern = /^(www\.)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}(\/.*)?$/;
@@ -512,32 +604,154 @@
                 if (protocolPattern.test(trimmed)) return true;
                 if (domainPattern.test(trimmed) || ipPattern.test(trimmed)) return true;
                 if (urlWithPathPattern.test(trimmed)) return true;
-                if (trimmed.includes(' ')) return false;
-                
-                const commonTLDs = ['.com', '.cn', '.net', '.org', '.io', '.edu', '.gov', '.co', '.me', '.info', '.biz'];
-                const hasTLD = commonTLDs.some(tld => trimmed.toLowerCase().includes(tld));
-                
-                if (hasTLD && !trimmed.includes(' ')) {
-                    const parts = trimmed.split('.');
-                    if (parts.length >= 2 && parts[parts.length - 1].length >= 2) {
-                        return true;
-                    }
-                }
                 
                 return false;
             }
         };
+
+        // 收藏夹存储模块
+        const Bookmarks = {
+            storageKey: 'terminalHomepageBookmarks',
+            items: [],
+
+            load() {
+                try {
+                    const saved = localStorage.getItem(this.storageKey);
+                    this.items = saved ? JSON.parse(saved) : [];
+                } catch (e) {
+                    this.items = [];
+                }
+                return this.items;
+            },
+
+            save() {
+                localStorage.setItem(this.storageKey, JSON.stringify(this.items));
+            },
+
+            findByName(name) {
+                const lower = name.toLowerCase();
+                return this.items.find(b => b.name.toLowerCase() === lower);
+            },
+
+            findByUrl(url) {
+                return this.items.find(b => b.url === url);
+            },
+
+            add(name, url) {
+                const iUrl = this.items.findIndex(b => b.url === url);
+                const iName = this.items.findIndex(b => b.name.toLowerCase() === name.toLowerCase());
+
+                if (iUrl !== -1) {
+                    if (iName !== -1 && iName !== iUrl) {
+                        return { ok: false, msg: `名字 "${name}" 已被占用` };
+                    }
+                    this.items[iUrl].name = name;
+                    this.items[iUrl].createdAt = Date.now();
+                    this.save();
+                    return { ok: true, msg: `已更新收藏: ${name} -> ${url}` };
+                }
+
+                if (iName !== -1) {
+                    return { ok: false, msg: `名字 "${name}" 已被占用` };
+                }
+
+                this.items.push({ name, url, createdAt: Date.now() });
+                this.save();
+                return { ok: true, msg: `已添加收藏: ${name} -> ${url}` };
+            },
+
+            remove(name) {
+                const lower = name.toLowerCase();
+                const idx = this.items.findIndex(b => b.name.toLowerCase() === lower);
+                if (idx === -1) {
+                    return { ok: false, msg: `未找到收藏: "${name}"` };
+                }
+                this.items.splice(idx, 1);
+                this.save();
+                return { ok: true, msg: `已删除收藏: "${name}"` };
+            },
+
+            list() {
+                return this.items
+                    .slice()
+                    .sort((a, b) => a.createdAt - b.createdAt);
+            }
+        };
+
+        // 初始化收藏夹数据
+        Bookmarks.load();
 
         // 注册 -f 指令：强制搜索
         CommandSystem.register('-f', (args, parsed) => {
             if (!args) {
                 return { action: 'error', message: 'Usage: -f <search query>' };
             }
-            return { action: 'search', query: args };
+            return { 
+                action: 'search', 
+                query: args,
+                display: `Force searching: "${args}"`
+            };
         }, 'Force search mode');
 
+        // 注册 -add 指令：添加/更新收藏
+        CommandSystem.register('-add', (args) => {
+            const lastSpace = args.lastIndexOf(' ');
+            if (lastSpace === -1) {
+                return { action: 'output', text: 'Usage: -add <name> <url>', outputType: 'error' };
+            }
+            const name = args.substring(0, lastSpace).trim();
+            const urlCandidate = args.substring(lastSpace + 1).trim();
+            if (!name || !CommandSystem.isURL(urlCandidate)) {
+                return { action: 'output', text: 'Usage: -add <name> <url>', outputType: 'error' };
+            }
+            const url = CommandSystem.normalizeUrl(urlCandidate);
+            const res = Bookmarks.add(name, url);
+            return { action: 'output', text: res.msg, outputType: res.ok ? 'success' : 'error' };
+        }, 'Add bookmark');
+
+        // 注册 -j 指令：跳转到收藏
+        CommandSystem.register('-j', (args) => {
+            if (!args) {
+                return { action: 'output', text: 'Usage: -j <name>', outputType: 'error' };
+            }
+            const bookmark = Bookmarks.findByName(args);
+            if (!bookmark) {
+                return { action: 'output', text: `未找到收藏: "${args}"`, outputType: 'error' };
+            }
+            return { action: 'navigate', url: bookmark.url, display: `Opening: ${bookmark.url}` };
+        }, 'Jump to bookmark');
+
+        // 注册 -ls 指令：列出所有收藏
+        CommandSystem.register('-ls', () => {
+            const items = Bookmarks.list();
+            if (items.length === 0) {
+                return { action: 'output', text: '暂无收藏', outputType: 'normal' };
+            }
+            const lines = items.map(b => {
+                const time = new Date(b.createdAt).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                return `${b.name} | ${b.url} | ${time}`;
+            });
+            return { action: 'output', text: lines.join('\n'), outputType: 'normal' };
+        }, 'List bookmarks');
+
+        // 注册 -rm 指令：删除收藏
+        CommandSystem.register('-rm', (args) => {
+            if (!args) {
+                return { action: 'output', text: 'Usage: -rm <name>', outputType: 'error' };
+            }
+            const res = Bookmarks.remove(args);
+            return { action: 'output', text: res.msg, outputType: res.ok ? 'success' : 'error' };
+        }, 'Remove bookmark');
+
         // 处理输入
-        input.addEventListener('keydown', function(e) {
+        Terminal.input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const value = this.value.trim();
                 if (!value) return;
@@ -545,25 +759,49 @@
                 const result = CommandSystem.execute(CommandSystem.parse(value));
                 
                 let url;
+                let output = '';
+                let outputType = 'normal';
+                
                 switch (result.action) {
                     case 'navigate':
                         url = result.url;
+                        output = result.display || `Opening: ${url}`;
+                        outputType = 'success';
                         break;
                     case 'search':
                         url = config.searchEngine + encodeURIComponent(result.query);
+                        output = result.display || `Searching: "${result.query}"`;
+                        outputType = 'success';
                         break;
                     case 'error':
-                        alert(result.message);
+                        output = result.message;
+                        outputType = 'error';
+                        Terminal.addHistory(value, output, outputType);
+                        Terminal.clearInput();
+                        Terminal.focus();
+                        return;
+                    case 'output':
+                        Terminal.addHistory(value, result.text, result.outputType || 'normal');
+                        Terminal.clearInput();
+                        Terminal.focus();
                         return;
                     default:
                         return;
                 }
                 
-                if (config.openInNewTab) {
-                    window.open(url, '_blank');
-                } else {
-                    window.location.href = url;
-                }
+                // 添加到历史记录
+                Terminal.addHistory(value, output, outputType);
+                Terminal.clearInput();
+                Terminal.focus();
+                
+                // 延迟跳转，让用户看到输出
+                setTimeout(() => {
+                    if (config.openInNewTab) {
+                        window.open(url, '_blank');
+                    } else {
+                        window.location.href = url;
+                    }
+                }, 300);
             }
         });
 
@@ -571,13 +809,21 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 'l') {
                 e.preventDefault();
-                input.value = '';
-                input.focus();
+                Terminal.input.value = '';
+                Terminal.focus();
+            }
+        });
+
+        // 点击终端聚焦输入
+        document.addEventListener('click', (e) => {
+            if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
+                Terminal.focus();
             }
         });
 
         // 初始化
         loadConfig();
+        Terminal.focus();
     </script>
 </body>
 </html>
