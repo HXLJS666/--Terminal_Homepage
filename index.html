@@ -5,30 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal Homepage</title>
     <style>
+        :root {
+            --bg: #0a0a0a;
+            --fg: #7ce8a0;
+            --fg-dim: rgba(124, 232, 160, 0.82);
+            --fg-faint: rgba(124, 232, 160, 0.62);
+            --glow: rgba(124, 232, 160, 0.4);
+            --panel-bg: rgba(255, 255, 255, 0.035);
+            --header-bg: rgba(255, 255, 255, 0.06);
+            --border: rgba(124, 232, 160, 0.4);
+            --error: #d97a7a;
+            --success: #a9d1a9;
+            --panel-fg: #d8d8d8;
+            --panel-fg-dim: #b0b0b0;
+            --panel-border: rgba(255, 255, 255, 0.28);
+            --panel-accent: #7ce8a0;
+            --panel-glow: rgba(255, 255, 255, 0.35);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-            background-color: #0c0c0c;
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: #00ff00;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
+        html, body {
+            height: 100%;
         }
 
-        body.has-bg-image {
-            background-color: rgba(12, 12, 12, 0.85);
-            background-blend-mode: overlay;
+        body {
+            font-family: 'Consolas', 'Monaco', 'Menlo', 'Courier New', monospace;
+            background-color: var(--bg);
+            color: var(--fg);
+            margin: 0;
+            overflow: hidden;
+            letter-spacing: 0.3px;
+        }
+
+        /* 背景图层：承载背景图片，透明度由配置控制 */
+        #bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .settings-container {
@@ -40,19 +62,19 @@
 
         .settings-btn {
             background: transparent;
-            border: 1px solid #00ff00;
-            color: #00ff00;
+            border: 1px solid var(--border);
+            color: var(--fg);
             padding: 8px 12px;
             cursor: pointer;
             font-family: inherit;
             font-size: 14px;
-            border-radius: 4px;
+            border-radius: 3px;
+            
             transition: all 0.3s ease;
         }
 
         .settings-btn:hover {
-            background: #00ff00;
-            color: #0c0c0c;
+            background: var(--panel-bg);
         }
 
         .settings-panel {
@@ -60,11 +82,11 @@
             top: 45px;
             right: 0;
             width: 300px;
-            background-color: #1a1a1a;
-            border: 1px solid #00ff00;
-            border-radius: 8px;
+            background-color: rgba(10, 10, 10, 0.92);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
             padding: 20px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 24px rgba(0, 0, 0, 0.6);
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px);
@@ -79,9 +101,11 @@
 
         .settings-panel h3 {
             margin-bottom: 15px;
-            color: #00ff00;
-            border-bottom: 1px solid #00ff00;
+            color: var(--panel-fg);
+            border-bottom: 1px solid var(--panel-border);
             padding-bottom: 10px;
+            font-weight: normal;
+            letter-spacing: 1px;
         }
 
         .setting-item {
@@ -90,29 +114,29 @@
 
         .setting-item label {
             display: block;
-            margin-bottom: 5px;
-            color: #888;
+            margin-bottom: 6px;
+            color: var(--panel-fg-dim);
             font-size: 12px;
         }
 
         .setting-item input[type="text"] {
             width: 100%;
-            background: #0c0c0c;
-            border: 1px solid #333;
-            color: #00ff00;
+            background: transparent;
+            border: 1px solid var(--panel-border);
+            color: var(--panel-fg);
             padding: 8px;
             font-family: inherit;
-            border-radius: 4px;
+            border-radius: 3px;
         }
 
         .setting-item input[type="text"]:focus {
             outline: none;
-            border-color: #00ff00;
+            border-color: var(--panel-accent);
         }
 
         .setting-item input[type="checkbox"] {
             margin-right: 8px;
-            accent-color: #00ff00;
+            accent-color: var(--panel-fg-dim);
         }
 
         .setting-item.checkbox {
@@ -125,65 +149,76 @@
             cursor: pointer;
         }
 
+        .setting-item input[type="range"] {
+            width: 100%;
+            accent-color: var(--panel-fg-dim);
+            cursor: pointer;
+        }
+
+        .swatch-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 2px;
+        }
+
+        .swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 3px;
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            cursor: pointer;
+            padding: 0;
+            background-clip: content-box;
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .swatch.active {
+            border-color: var(--panel-fg-dim);
+            box-shadow: 0 0 8px var(--panel-fg-dim);
+        }
+
+        .swatch-custom {
+            display: inline-block;
+            position: relative;
+            background: linear-gradient(135deg, #ff5f6d, #ffc371, #4ecdc4, #6c5ce7);
+        }
+
+        .swatch-custom input[type="color"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            border: 0;
+            padding: 0;
+        }
+
         .save-btn {
             width: 100%;
-            background: #00ff00;
-            color: #0c0c0c;
-            border: none;
+            background: var(--panel-bg);
+            color: var(--panel-fg);
+            border: 1px solid var(--panel-border);
             padding: 10px;
             font-family: inherit;
-            font-weight: bold;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 3px;
             margin-top: 10px;
+            
             transition: all 0.3s ease;
         }
 
         .save-btn:hover {
-            background: #00cc00;
+            background: var(--header-bg);
         }
 
-        .terminal-container {
-            width: 95%;
-            max-width: 1000px;
-            background-color: #1a1a1a;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            max-height: 90vh;
-        }
-
-        .terminal-header {
-            background-color: #2d2d2d;
-            padding: 10px 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .terminal-btn {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .btn-close { background-color: #ff5f56; }
-        .btn-minimize { background-color: #ffbd2e; }
-        .btn-maximize { background-color: #27c93f; }
-
-        .terminal-title {
-            margin-left: 10px;
-            color: #888;
-            font-size: 14px;
-        }
-
-        .terminal-body {
-            padding: 20px 30px;
+        .terminal {
+            position: relative;
+            z-index: 1;
+            height: 100vh;
             overflow-y: auto;
-            flex: 1;
+            padding: 24px 32px;
         }
 
         .terminal-content {
@@ -195,17 +230,17 @@
         }
 
         .ascii-art {
-            color: #00ff00;
+            color: var(--fg);
             font-size: 11px;
             line-height: 1.1;
             margin-bottom: 15px;
-            opacity: 0.8;
+            opacity: 0.85;
             white-space: pre;
             overflow-x: auto;
         }
 
         .time-display {
-            color: #888;
+            color: var(--fg-dim);
             font-size: 12px;
             margin-bottom: 10px;
         }
@@ -213,6 +248,7 @@
         .welcome-text {
             line-height: 1.6;
             margin-bottom: 10px;
+            color: var(--fg-dim);
         }
 
         .welcome-text .line {
@@ -234,18 +270,18 @@
         }
 
         .history-output {
-            color: #888;
+            color: var(--fg-dim);
             margin-top: 4px;
             padding-left: 20px;
             white-space: pre-wrap;
         }
 
         .history-output.error {
-            color: #ff5f56;
+            color: var(--error);
         }
 
         .history-output.success {
-            color: #27c93f;
+            color: var(--success);
         }
 
         .prompt-line {
@@ -255,25 +291,26 @@
         }
 
         .prompt {
-            color: #00ff00;
+            color: var(--fg);
             margin-right: 10px;
             white-space: nowrap;
+            
         }
 
         .prompt-user {
-            color: #00ff00;
+            color: var(--fg);
         }
 
         .prompt-at {
-            color: #ffff00;
+            color: var(--fg-dim);
         }
 
         .prompt-host {
-            color: #00ffff;
+            color: var(--fg);
         }
 
         .prompt-path {
-            color: #ff00ff;
+            color: var(--fg-faint);
         }
 
         .input-wrapper {
@@ -287,24 +324,27 @@
             background: transparent;
             border: none;
             outline: none;
-            color: #00ff00;
+            color: var(--fg);
             font-family: inherit;
             font-size: 16px;
-            caret-color: #00ff00;
+            caret-color: var(--fg);
+            
         }
 
         .search-engine-info {
             margin-top: 15px;
-            color: #666;
+            color: var(--fg-faint);
             font-size: 12px;
         }
 
         .search-engine-info span {
-            color: #00ff00;
+            color: var(--fg-dim);
         }
     </style>
 </head>
 <body>
+    <div id="bg-layer"></div>
+
     <div class="settings-container">
         <button class="settings-btn" id="settings-btn">[ Settings ]</button>
         <div class="settings-panel" id="settings-panel">
@@ -321,19 +361,32 @@
                 <label>Background Image Path</label>
                 <input type="text" id="setting-bgimage" placeholder="e.g., images/bg.jpg">
             </div>
+            <div class="setting-item">
+                <label>Background Image Opacity: <span id="bgopacity-value">40%</span></label>
+                <input type="range" id="setting-bgopacity" min="0" max="100" step="5" value="40">
+            </div>
+            <div class="setting-item">
+                <label>Background Image Blur: <span id="bgblur-value">0px</span></label>
+                <input type="range" id="setting-bgblur" min="0" max="40" step="1" value="0">
+            </div>
+            <div class="setting-item">
+                <label>Background Bleed: <span id="bgbleed-value">32px</span></label>
+                <input type="range" id="setting-bgbleed" min="0" max="100" step="1" value="32">
+            </div>
+            <div class="setting-item">
+                <label>Text Color</label>
+                <div class="swatch-group" id="text-color-swatches"></div>
+            </div>
+            <div class="setting-item">
+                <label>Background Color</label>
+                <div class="swatch-group" id="bg-color-swatches"></div>
+            </div>
             <button class="save-btn" id="save-settings">Save Settings</button>
         </div>
     </div>
 
-    <div class="terminal-container">
-        <div class="terminal-header">
-            <div class="terminal-btn btn-close"></div>
-            <div class="terminal-btn btn-minimize"></div>
-            <div class="terminal-btn btn-maximize"></div>
-            <span class="terminal-title">terminal@homepage: ~</span>
-        </div>
-        <div class="terminal-body" id="terminal-body">
-            <div class="terminal-content" id="terminal-content">
+    <div class="terminal" id="terminal-body">
+        <div class="terminal-content" id="terminal-content">
                 <div class="welcome-section">
                     <div class="ascii-art">
  _________      __ ______  __  __________  ___  _________ 
@@ -368,15 +421,40 @@
                 </div>
             </div>
         </div>
-    </div>
 
     <script>
+        // 收敛的复古配色（文字 / 背景）
+        const TEXT_COLORS = [
+            { name: '磷光绿', value: '#7ce8a0' },
+            { name: '琥珀', value: '#e6b35a' },
+            { name: '暖灰白', value: '#d8d8d8' },
+            { name: '冰青', value: '#7cc9c9' }
+        ];
+
+        const BG_COLORS = [
+            { name: '纯黑', value: '#0a0a0a' },
+            { name: '墨蓝', value: '#0a0f14' },
+            { name: '松绿黑', value: '#071009' },
+            { name: '暖棕黑', value: '#120d08' }
+        ];
+
+        // 十六进制转 rgb 通道
+        function hexToRgb(hex) {
+            const n = parseInt(hex.replace('#', ''), 16);
+            return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+        }
+
         // 默认配置
         const defaultConfig = {
             username: "user",
             openInNewTab: false,
             backgroundImage: "",
-            searchEngine: "https://cn.bing.com/search?q="
+            searchEngine: "https://cn.bing.com/search?q=",
+            textColor: "#7ce8a0",
+            backgroundColor: "#0a0a0a",
+            backgroundImageOpacity: 40,
+            backgroundImageBlur: 0,
+            backgroundImageBleed: 32
         };
 
         // 当前配置
@@ -396,21 +474,105 @@
             localStorage.setItem('terminalHomepageConfig', JSON.stringify(config));
         }
 
+        // 由主文字色推导派生色（dim / faint / glow / border）
+        function applyTextPalette(hex) {
+            const { r, g, b } = hexToRgb(hex);
+            const root = document.documentElement.style;
+            root.setProperty('--fg', hex);
+            root.setProperty('--fg-dim', `rgba(${r}, ${g}, ${b}, 0.82)`);
+            root.setProperty('--fg-faint', `rgba(${r}, ${g}, ${b}, 0.62)`);
+            root.setProperty('--glow', `rgba(${r}, ${g}, ${b}, 0.4)`);
+            root.setProperty('--border', `rgba(${r}, ${g}, ${b}, 0.4)`);
+        }
+
         // 应用配置
         function applyConfig() {
             document.getElementById('prompt-username').textContent = config.username;
-            
-            if (config.backgroundImage) {
-                document.body.style.backgroundImage = `url(${config.backgroundImage})`;
-                document.body.classList.add('has-bg-image');
-            } else {
-                document.body.style.backgroundImage = '';
-                document.body.classList.remove('has-bg-image');
-            }
-            
+
+            // 背景颜色
+            document.documentElement.style.setProperty('--bg', config.backgroundColor || defaultConfig.backgroundColor);
+
+            // 文字颜色（含派生色）
+            applyTextPalette(config.textColor || defaultConfig.textColor);
+
+            // 背景图片与透明度
+            const bgLayer = document.getElementById('bg-layer');
+            bgLayer.style.backgroundImage = config.backgroundImage ? `url("${config.backgroundImage}")` : '';
+            const opacity = Math.min(100, Math.max(0, config.backgroundImageOpacity || 0));
+            bgLayer.style.opacity = opacity / 100;
+            const blur = Math.min(40, Math.max(0, config.backgroundImageBlur || 0));
+            bgLayer.style.filter = blur > 0 ? `blur(${blur}px)` : '';
+            const bleed = Math.min(100, Math.max(0, config.backgroundImageBleed || 0));
+            bgLayer.style.inset = `-${bleed}px`;
+
+            // 表单回填
             document.getElementById('setting-username').value = config.username;
             document.getElementById('setting-newtab').checked = config.openInNewTab;
             document.getElementById('setting-bgimage').value = config.backgroundImage;
+            document.getElementById('setting-bgopacity').value = opacity;
+            document.getElementById('bgopacity-value').textContent = opacity + '%';
+            document.getElementById('setting-bgblur').value = blur;
+            document.getElementById('bgblur-value').textContent = blur + 'px';
+            document.getElementById('setting-bgbleed').value = bleed;
+            document.getElementById('bgbleed-value').textContent = bleed + 'px';
+
+            updateSwatches();
+        }
+
+        // 渲染色块
+        function renderSwatches(containerId, colorArray, key) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            colorArray.forEach(c => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'swatch';
+                btn.style.backgroundColor = c.value;
+                btn.title = c.name;
+                btn.dataset.value = c.value;
+                btn.addEventListener('click', () => {
+                    config[key] = c.value;
+                    applyConfig();
+                });
+                container.appendChild(btn);
+            });
+
+            // 自定义颜色（原生取色器）
+            const label = document.createElement('label');
+            label.className = 'swatch swatch-custom';
+            label.title = '自定义颜色';
+            const picker = document.createElement('input');
+            picker.type = 'color';
+            picker.value = config[key] || '#000000';
+            picker.addEventListener('input', () => {
+                config[key] = picker.value;
+                applyConfig();
+            });
+            label.appendChild(picker);
+            container.appendChild(label);
+        }
+
+        // 更新色块选中态
+        function updateSwatches() {
+            ['textColor', 'backgroundColor'].forEach((key, i) => {
+                const id = i === 0 ? 'text-color-swatches' : 'bg-color-swatches';
+                const container = document.getElementById(id);
+                const cur = (config[key] || '').toLowerCase();
+                let matchedPreset = false;
+                container.querySelectorAll('.swatch:not(.swatch-custom)').forEach(btn => {
+                    const matched = (btn.dataset.value || '').toLowerCase() === cur;
+                    btn.classList.toggle('active', matched);
+                    if (matched) matchedPreset = true;
+                });
+                const custom = container.querySelector('.swatch-custom');
+                if (custom) {
+                    custom.classList.toggle('active', !matchedPreset);
+                    const picker = custom.querySelector('input[type="color"]');
+                    if (picker && /^#[0-9a-f]{6}$/i.test(config[key] || '')) {
+                        picker.value = config[key];
+                    }
+                }
+            });
         }
 
         // 设置面板控制
@@ -437,10 +599,34 @@
             config.username = document.getElementById('setting-username').value || 'user';
             config.openInNewTab = document.getElementById('setting-newtab').checked;
             config.backgroundImage = document.getElementById('setting-bgimage').value;
+            config.backgroundImageOpacity = parseInt(document.getElementById('setting-bgopacity').value, 10);
+            config.backgroundImageBlur = parseInt(document.getElementById('setting-bgblur').value, 10);
+            config.backgroundImageBleed = parseInt(document.getElementById('setting-bgbleed').value, 10);
             
             saveConfig();
             applyConfig();
             settingsPanel.classList.remove('active');
+        });
+
+        // 背景图片透明度滑块：实时预览
+        document.getElementById('setting-bgopacity').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value, 10);
+            document.getElementById('bgopacity-value').textContent = val + '%';
+            document.getElementById('bg-layer').style.opacity = val / 100;
+        });
+
+        // 背景图片模糊度：实时预览
+        document.getElementById('setting-bgblur').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value, 10);
+            document.getElementById('bgblur-value').textContent = val + 'px';
+            document.getElementById('bg-layer').style.filter = val > 0 ? `blur(${val}px)` : '';
+        });
+
+        // 背景图片边缘扩展：实时预览
+        document.getElementById('setting-bgbleed').addEventListener('input', (e) => {
+            const val = parseInt(e.target.value, 10);
+            document.getElementById('bgbleed-value').textContent = val + 'px';
+            document.getElementById('bg-layer').style.inset = `-${val}px`;
         });
 
         // 更新时间显示
@@ -750,6 +936,11 @@
             return { action: 'output', text: res.msg, outputType: res.ok ? 'success' : 'error' };
         }, 'Remove bookmark');
 
+        // 注册 -clr 指令：清空终端历史记录
+        CommandSystem.register('-clr', () => {
+            return { action: 'clear' };
+        }, 'Clear terminal history');
+
         // 处理输入
         Terminal.input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -782,6 +973,11 @@
                         return;
                     case 'output':
                         Terminal.addHistory(value, result.text, result.outputType || 'normal');
+                        Terminal.clearInput();
+                        Terminal.focus();
+                        return;
+                    case 'clear':
+                        Terminal.history.innerHTML = '';
                         Terminal.clearInput();
                         Terminal.focus();
                         return;
@@ -822,6 +1018,8 @@
         });
 
         // 初始化
+        renderSwatches('text-color-swatches', TEXT_COLORS, 'textColor');
+        renderSwatches('bg-color-swatches', BG_COLORS, 'backgroundColor');
         loadConfig();
         Terminal.focus();
     </script>
